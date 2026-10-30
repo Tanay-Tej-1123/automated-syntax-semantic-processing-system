@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Syntax and Semantic Analysis System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="header">
+        <div class="header-brand">
+            <div class="logo-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+            </div>
+            <div>
+                <h1 class="header-title">Automated Syntax and Semantic Analysis System</h1>
+                <p class="header-subtitle">Compiler Design Mini-Project • B.Tech CSE / IT Demonstration Tool</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <div class="sample-dropdown-container">
+                <label for="sampleSelector" class="visually-hidden">Load Sample</label>
+                <select id="sampleSelector" class="select-input">
+                    <option value="" disabled selected>⚡ Load Sample Program...</option>
+                    <optgroup label="Valid Test Cases">
+                        <option value="valid_factorial">Factorial & Loop (Valid)</option>
+                        <option value="valid_temperature">Temperature & Branches (Valid)</option>
+                        <option value="valid_scoping">Nested Scopes & Shadowing (Valid)</option>
+                        <option value="valid_boolean_logic">Boolean & String Logic (Valid)</option>
+                    </optgroup>
+                    <optgroup label="Invalid Test Cases">
+                        <option value="invalid_lexical">Lexical Errors (Illegal Chars / String)</option>
+                        <option value="invalid_syntax">Syntax Errors (Missing Semicolons / Braces)</option>
+                        <option value="invalid_semantic_declaration">Semantic: Undeclared & Duplicate</option>
+                        <option value="invalid_semantic_type">Semantic: Type Mismatch & Div/0</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <button id="btnGrammarModal" class="btn btn-outline" title="View MiniLang Grammar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                Grammar Specs
+            </button>
+
+            <button id="btnClear" class="btn btn-secondary" title="Clear Code">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Clear
+            </button>
+
+            <button id="btnAnalyze" class="btn btn-primary" title="Run Analysis (Ctrl+Enter)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Analyze Code
+            </button>
+        </div>
+    </header>
+
+    <!-- Phase Summary Badges -->
+    <section class="summary-bar" id="summaryBar">
+        <div class="summary-card" id="cardLexical">
+            <div class="summary-indicator" id="indicatorLexical"></div>
+            <div class="summary-info">
+                <span class="summary-label">Phase 1: Lexical</span>
+                <span class="summary-value" id="statusLexical">Ready</span>
+            </div>
+            <span class="summary-detail" id="tokensCount">0 Tokens</span>
+        </div>
+
+        <div class="summary-card" id="cardSyntax">
+            <div class="summary-indicator" id="indicatorSyntax"></div>
+            <div class="summary-info">
+                <span class="summary-label">Phase 2: Syntax</span>
+                <span class="summary-value" id="statusSyntax">Ready</span>
+            </div>
+            <span class="summary-detail" id="astCount">0 AST Nodes</span>
+        </div>
+
+        <div class="summary-card" id="cardSemantic">
+            <div class="summary-indicator" id="indicatorSemantic"></div>
+            <div class="summary-info">
+                <span class="summary-label">Phase 3: Semantic</span>
+                <span class="summary-value" id="statusSemantic">Ready</span>
+            </div>
+            <span class="summary-detail" id="symbolCount">0 Symbols</span>
+        </div>
+
+        <div class="summary-card" id="cardStatus">
+            <div class="summary-indicator" id="indicatorStatus"></div>
+            <div class="summary-info">
+                <span class="summary-label">Compilation Status</span>
+                <span class="summary-value" id="finalVerdict">Awaiting Input</span>
+            </div>
+            <span class="summary-detail" id="errorCount">0 Errors</span>
+        </div>
+    </section>
+
+    <!-- Main Workspace Container -->
+    <main class="main-container">
+        <!-- Left Panel: Source Code Editor -->
+        <section class="editor-pane">
+            <div class="pane-header">
+                <div class="pane-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    Source Code (MiniLang)
+                </div>
+                <div class="editor-meta">
+                    <span id="sampleTag" class="badge badge-neutral">Custom Code</span>
+                    <span class="shortcut-hint">Ctrl + Enter to Analyze</span>
+                </div>
+            </div>
+
+            <!-- Editor Wrapper with Line Numbers -->
+            <div class="editor-wrapper">
+                <div class="line-numbers" id="lineNumbers">1</div>
+                <textarea id="codeEditor" spellcheck="false" placeholder="// Type or paste MiniLang source code here...
+// Or choose a sample program from the dropdown above!"></textarea>
+            </div>
+
+            <!-- Quick Sample Pills -->
+            <div class="sample-pills">
+                <span class="pills-label">Quick Samples:</span>
+                <button class="pill-btn" data-sample="valid_factorial">Factorial</button>
+                <button class="pill-btn" data-sample="valid_temperature">Temperature</button>
+                <button class="pill-btn" data-sample="valid_scoping">Scoping</button>
+                <button class="pill-btn pill-btn-danger" data-sample="invalid_lexical">Lexical Err</button>
+                <button class="pill-btn pill-btn-danger" data-sample="invalid_syntax">Syntax Err</button>
+                <button class="pill-btn pill-btn-danger" data-sample="invalid_semantic_declaration">Decl Err</button>
+                <button class="pill-btn pill-btn-danger" data-sample="invalid_semantic_type">Type Err</button>
+            </div>
+        </section>
+
+        <!-- Right Panel: Results & Analysis Tabs -->
+        <section class="results-pane">
+            <div class="tabs-header">
+                <button class="tab-btn active" data-tab="tab-overview">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    Overview & Errors
+                    <span class="tab-badge" id="errorsTabBadge">0</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-tokens">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    Tokens (Lexer)
+                </button>
+                <button class="tab-btn" data-tab="tab-syntax">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Parse Tree & AST
+                </button>
+                <button class="tab-btn" data-tab="tab-semantics">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Symbol Table
+                </button>
+                <button class="tab-btn" data-tab="tab-guide">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    Viva Guide
+                </button>
+            </div>
+
+            <div class="tabs-content">
+                <!-- Tab 1: Overview & Error Report -->
+                <div class="tab-panel active" id="tab-overview">
+                    <div id="verdictBanner" class="alert alert-info">
+                        <strong>Ready to Analyze.</strong> Click the "Analyze Code" button or press Ctrl+Enter to run the automated lexical, syntax, and semantic checks.
+                    </div>
+
+                    <!-- Diagnostic Error List -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Diagnostic Error & Warning Report</h3>
+                            <button id="btnExportJson" class="btn btn-sm btn-outline">Export JSON</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="errorsContainer">
+                                <div class="empty-state">No errors detected. Code passed all compiler checks.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compiler Phase Architecture Explainer -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Compiler Phases Architecture & Flow</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="phases-grid">
+                                <div class="phase-box">
+                                    <div class="phase-badge phase-1">Phase 1: Lexical Analysis</div>
+                                    <p class="phase-desc">Scans source text character-by-character, strips comments, maps lexemes to defined Token Types, and reports illegal characters or unterminated strings.</p>
+                                </div>
+                                <div class="phase-box">
+                                    <div class="phase-badge phase-2">Phase 2: Syntax Analysis</div>
+                                    <p class="phase-desc">Uses Recursive Descent Parsing following MiniLang EBNF grammar to verify language structure and generate the Abstract Syntax Tree (AST).</p>
+                                </div>
+                                <div class="phase-box">
+                                    <div class="phase-badge phase-3">Phase 3: Semantic Analysis</div>
+                                    <p class="phase-desc">Maintains scoped Symbol Tables across global and nested blocks, enforcing declaration-before-use, type compatibility, and unique variable names.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Tokens Table -->
+                <div class="tab-panel" id="tab-tokens">
+                    <div class="filter-bar">
+                        <div class="filter-group">
+                            <span class="filter-label">Filter Category:</span>
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="Keyword">Keywords</button>
+                            <button class="filter-btn" data-filter="Identifier">Identifiers</button>
+                            <button class="filter-btn" data-filter="Literal">Literals</button>
+                            <button class="filter-btn" data-filter="Operator">Operators</button>
+                            <button class="filter-btn" data-filter="Delimiter">Delimiters</button>
+                        </div>
+                        <span id="filteredTokenCount" class="text-muted">Showing 0 tokens</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table" id="tokensTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Token Type</th>
+                                    <th>Category</th>
+                                    <th>Lexeme / Value</th>
+                                    <th>Line</th>
+                                    <th>Column</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="text-center text-muted">No tokens generated yet. Click "Analyze Code".</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Syntax Analysis & AST -->
+                <div class="tab-panel" id="tab-syntax">
+                    <div class="ast-controls">
+                        <div class="ast-stats">
+                            <span id="astStatsLabel" class="text-muted">Abstract Syntax Tree representation</span>
+                        </div>
+                        <div class="ast-buttons">
+                            <button id="btnExpandAst" class="btn btn-sm btn-outline">Expand All</button>
+                            <button id="btnCollapseAst" class="btn btn-sm btn-outline">Collapse All</button>
+                        </div>
+                    </div>
+
+                    <div class="ast-container" id="astContainer">
+                        <div class="empty-state">Parse tree / AST will appear here after analysis.</div>
+                    </div>
+
+                    <!-- Grammar Derivations Applied -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">Grammar Production Derivation Steps</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="derivation-log" id="derivationLog">
+                                <span class="text-muted">Run analysis to see production rules invoked during recursive descent.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Symbol Table -->
+                <div class="tab-panel" id="tab-semantics">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Scoped Symbol Table</h3>
+                            <span class="badge badge-info" id="symbolScopeCount">Scopes: 0</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table" id="symbolTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Identifier</th>
+                                            <th>Data Type</th>
+                                            <th>Scope</th>
+                                            <th>Scope Level</th>
+                                            <th>Declared Line:Col</th>
+                                            <th>Initialized</th>
+                                            <th>Value Preview</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="7" class="text-center text-muted">Symbol table will be populated upon semantic analysis.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">Semantic Validation Rules Enforced</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul class="rules-list">
+                                <li><strong>Declaration Before Use:</strong> Any identifier accessed in an expression or assignment must be previously declared in the current or an ancestor scope.</li>
+                                <li><strong>No Redeclaration in Same Scope:</strong> Identifiers cannot be declared multiple times within the same block scope. (Shadowing in inner nested blocks is allowed).</li>
+                                <li><strong>Strict Type Compatibility:</strong> Assignments require identical types, with safe widening of <code>int</code> into <code>float</code> permitted.</li>
+                                <li><strong>Expression Type Checking:</strong> Arithmetic operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>) require numeric operands, with <code>+</code> overloaded for strings. Relational operators require numeric operands and yield <code>bool</code>. Logical operators require <code>bool</code> operands.</li>
+                                <li><strong>Control Flow Guards:</strong> Conditions in <code>if</code> and <code>while</code> statements must evaluate to <code>bool</code>.</li>
+                                <li><strong>Constant Division by Zero:</strong> Divisors with literal zero (<code>0</code> or <code>0.0</code>) are caught and reported at compile time.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Viva Guide & Documentation -->
+                <div class="tab-panel" id="tab-guide">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Compiler Design Viva Q&A (Project Presentation Guide)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="faq-item">
+                                <h4>Q1. What is the objective of this project?</h4>
+                                <p>To design and implement an end-to-end automated compiler frontend for MiniLang that performs real Lexical, Syntax, and Semantic analysis, producing detailed diagnostic errors and symbol tables without mockups or hardcoded results.</p>
+                            </div>
+                            <div class="faq-item">
+                                <h4>Q2. What parser technique is used?</h4>
+                                <p>A <strong>Recursive Descent Parser</strong> (Top-Down LL(1) parsing technique). Each non-terminal in our EBNF grammar corresponds to a Python function. Precedence climbing is used to properly handle operator precedence.</p>
+                            </div>
+                            <div class="faq-item">
+                                <h4>Q3. How does the symbol table handle lexical scoping?</h4>
+                                <p>The symbol table uses a hierarchical tree structure with parent pointers. When entering a block <code>{ ... }</code>, a child symbol table is pushed. Lookup checks the current scope first, then walks up to parent scopes. On exiting, the scope pops back to the parent.</p>
+                            </div>
+                            <div class="faq-item">
+                                <h4>Q4. What is the difference between Syntax and Semantic analysis?</h4>
+                                <p><strong>Syntax analysis</strong> checks whether the tokens follow the grammatical structure of the language (e.g. balanced braces, semicolons, valid statement structure). <strong>Semantic analysis</strong> checks the meaning and consistency (e.g. whether variables are declared before use, types match, and operations are valid).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Grammar Modal -->
+    <div class="modal" id="grammarModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">MiniLang Formal Grammar Specification (EBNF)</h3>
+                    <button class="modal-close" id="btnModalClose">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <pre class="grammar-code" id="grammarCodeDisplay">Loading grammar...</pre>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="btnModalOk">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
